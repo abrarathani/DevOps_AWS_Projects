@@ -1,0 +1,44 @@
+Troubleshooting: Jenkins Storage, Temp, and Swap Issues
+Example Error
+Critical Issues Causing Built-In Node Offline:
+Free Swap Space: 0 B ⚠️
+Free Temp Space: 447.93 MiB ⚠️
+Node Status: (offline)
+Why:
+Jenkins monitors system resources. If swap space is zero or temp space is too low, Jenkins marks the node as offline to prevent unstable builds.
+
+Steps to Fix
+1. Add Swap Space (Amazon Linux 2023)
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+To make it permanent:
+
+echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+2. Clean Temp Directory
+Check and clean /tmp:
+
+sudo du -sh /tmp/*
+sudo rm -rf /tmp/*
+sudo systemctl restart jenkins
+Note: If your free disk space is only 4.75 GiB, consider cleaning up or expanding storage soon.
+
+3. Check /tmp Space
+df -h /tmp
+Example output:
+
+tmpfs   452M   4M   448M  1% /tmp
+4. Two Recommended Fixes
+Option 1: Increase /tmp Size Temporarily (if tmpfs)
+
+sudo mount -o remount,size=2G /tmp
+(Note: This change lasts until reboot.)
+
+Option 2: Use Disk for Jenkins Temp Directory
+
+Create new temp directory:
+sudo mkdir -p /opt/jenkins_tmp
+sudo chmod 777 /opt/jenkins_tmp
+Configure Jenkins to use this directory as JAVA_OPTS temp location, and restart Jenkins:
+sudo systemctl restart jenkins
