@@ -1,0 +1,55 @@
+# Installing Git on Ubuntu, Amazon Linux, and Red Hat
+
+This guide provides step-by-step instructions for installing Git on three popular Linux distributions: **Ubuntu**, **Amazon Linux**, and **Red Hat (RHEL/CentOS)**.
+
+---
+
+## 1. Ubuntu
+
+### Update System
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Install Git
+```bash
+sudo apt install git -y
+```
+
+---
+
+## 2. Amazon Linux
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Git
+```bash
+sudo yum install git -y
+```
+
+---
+
+## 3. Red Hat (RHEL/CentOS)
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Git
+```bash
+sudo yum install git -y
+```
+
+---
+
+**Note:**  
+- You may need `sudo` for all commands above.  
+- After installation, verify the Git version with:
+  ```bash
+  git --version
+  ```
+- For the latest Git version, you may need to add extra repositories or build from source. These instructions install the default version available in each system's package manager.
