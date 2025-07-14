@@ -1,0 +1,91 @@
+# Installing Jenkins on Ubuntu, Amazon Linux, and Red Hat
+
+This guide provides step-by-step instructions for installing Jenkins on three popular Linux distributions: **Ubuntu**, **Amazon Linux**, and **Red Hat (RHEL/CentOS)**.
+
+---
+
+## 1. Ubuntu
+
+### Update System
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Install Java (Jenkins requirement)
+```bash
+sudo apt install openjdk-11-jre -y
+```
+
+### Install Jenkins
+```bash
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+sudo apt update
+sudo apt install jenkins -y
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+```
+
+---
+
+## 2. Amazon Linux
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Java (Jenkins requirement)
+```bash
+sudo amazon-linux-extras install java-openjdk11 -y
+```
+
+### Install Jenkins
+```bash
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum install jenkins -y
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+```
+
+---
+
+## 3. Red Hat (RHEL/CentOS)
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Java (Jenkins requirement)
+```bash
+sudo yum install java-11-openjdk -y
+```
+
+### Install Jenkins
+```bash
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum install jenkins -y
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+```
+
+---
+
+## Access Jenkins
+
+After installation, Jenkins runs on port 8080 by default. Access Jenkins at:  
+`http://<your_server_ip>:8080`
+
+To get the initial admin password:
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+---
+
+**Note:**  
+- Ensure your firewall allows port 8080.
+- You may need to adjust steps slightly for different minor versions or variants.
