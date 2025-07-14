@@ -168,12 +168,34 @@ Replace `<jenkins_project_name>` and `<ansible_ip>` with your actual values.
 - **Name:** Ansible  
 - **Exec command:**  
   ```bash
-  ansible-playbook /opt/web.yaml -i /opt/invt
+  ansible-playbook /opt/web.yaml -i /opt/myinvent
   ```
 
 ---
 
-### 6. Example Ansible Playbook (`web.yaml`)
+### 6. Ansible Server Setup: Inventory & Playbook
+
+#### 6.1 Create Ansible Inventory File
+
+On the Ansible server, create an inventory file (e.g., `/opt/myinvent`):
+
+```ini
+[test]
+<web_host_ip>   ansible_user=ec2-user
+```
+Replace `<web_host_ip>` with the actual IP address of your web host EC2.
+
+#### 6.2 (Optional) Add Hosts to /etc/hosts
+
+If needed, map hostnames:
+```bash
+sudo vi /etc/hosts
+# Add: <web_host_ip> web
+```
+
+#### 6.3 Create Ansible Playbook
+
+Create your playbook at `/opt/web.yaml`:
 
 ```yaml
 ---
@@ -194,7 +216,7 @@ Replace `<jenkins_project_name>` and `<ansible_ip>` with your actual values.
 
     - name: Copy index.html
       copy:
-        src: index.html
+        src: /opt/index.html
         dest: /var/www/html/
 
     - name: Restart httpd service
