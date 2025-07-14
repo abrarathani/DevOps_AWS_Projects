@@ -1,0 +1,110 @@
+# Installing Docker on Ubuntu, Amazon Linux, and Red Hat
+
+This guide provides step-by-step instructions for installing Docker on three popular Linux distributions: **Ubuntu**, **Amazon Linux**, and **Red Hat (RHEL/CentOS)**.
+
+---
+
+## 1. Ubuntu
+
+### Update System
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Install Required Packages
+```bash
+sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+```
+
+### Add Docker’s Official GPG Key
+```bash
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+```
+
+### Add Docker Repository
+```bash
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+```
+
+### Install Docker Engine
+```bash
+sudo apt update
+sudo apt install docker-ce -y
+```
+
+### Start and Enable Docker
+```bash
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+---
+
+## 2. Amazon Linux
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Docker
+```bash
+sudo amazon-linux-extras install docker -y
+```
+
+### Start and Enable Docker
+```bash
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+---
+
+## 3. Red Hat (RHEL/CentOS)
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Required Packages
+```bash
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+```
+
+### Add Docker Repository
+```bash
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+```
+
+### Install Docker Engine
+```bash
+sudo yum install docker-ce -y
+```
+
+### Start and Enable Docker
+```bash
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+---
+
+## Post-Installation (All OS)
+
+### Verify Docker Installation
+```bash
+docker --version
+```
+
+### (Optional) Manage Docker as a Non-Root User
+```bash
+sudo usermod -aG docker $USER
+```
+Log out and back in for the group change to take effect.
+
+---
+
+**Note:**  
+- You may need `sudo` for all Docker commands if you do not add your user to the docker group.
+- For the latest installation instructions, always refer to the [official Docker documentation](https://docs.docker.com/engine/install/).
