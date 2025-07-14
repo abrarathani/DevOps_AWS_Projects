@@ -1,0 +1,62 @@
+# Installing Ansible on Ubuntu, Amazon Linux, and Red Hat
+
+This guide provides step-by-step instructions for installing Ansible on three popular Linux distributions: **Ubuntu**, **Amazon Linux**, and **Red Hat (RHEL/CentOS)**.
+
+---
+
+## 1. Ubuntu
+
+### Update System
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Install Ansible
+```bash
+sudo apt install software-properties-common -y
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible -y
+```
+
+---
+
+## 2. Amazon Linux
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Install Ansible
+```bash
+sudo amazon-linux-extras install epel -y
+sudo yum install ansible -y
+```
+
+---
+
+## 3. Red Hat (RHEL/CentOS)
+
+### Update System
+```bash
+sudo yum update -y
+```
+
+### Enable EPEL Repository (if needed)
+```bash
+sudo yum install epel-release -y
+```
+
+### Install Ansible
+```bash
+sudo yum install ansible -y
+```
+
+---
+
+**Note:**  
+- After installation, verify Ansible with:
+  ```bash
+  ansible --version
+  ```
+- For the latest versions, you may install Ansible via `pip` (Python package manager), but the above uses system packages for stability and support.
