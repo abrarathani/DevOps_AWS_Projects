@@ -1,0 +1,11 @@
+Configuration
+4.1 GitHub ↔ Jenkins Webhook
+On Jenkins server:
+Go to Account → Security → API Token → Generate. Save the token.
+In Jenkins:
+Go to Configure → API Token and apply/save.
+On GitHub:
+Go to Repo Settings → Webhooks → Add webhook
+Payload URL: Paste Jenkins webhook URL (e.g., http://<jenkins-ip>:8080/github-webhook/)
+Content type: application/json
+Secret: Paste Jenkins token
