@@ -1,0 +1,337 @@
+# CI/CD Project 2: Web Server Deployment with Docker, Jenkins, Ansible, Docker Hub, and EC2
+
+## Overview
+
+This project demonstrates a complete CI/CD pipeline for deploying a Dockerized web server using GitHub, Jenkins, Ansible, Docker Hub, and Docker Host EC2 instances. The flow automates build, test, and deployment steps from code push to running containers on a target Linux host.
+
+---
+
+## Flow Diagram
+
+```
+Developer → GitHub → Jenkins (webhook) → Build/Test/Docker Push → Ansible (Publish over SSH) → Docker Host (Start Container)
+```
+
+---
+
+## Components
+
+- **GitHub:** Source code repository (includes Dockerfile, index.html, etc.).
+- **Jenkins:** CI/CD server for automation, builds, and orchestration.
+- **Ansible:** Configuration management and remote execution.
+- **Docker Hub:** Image registry for storing built images.
+- **Docker Host (EC2):** Target server to run containers.
+
+---
+
+## Infrastructure Setup
+
+### 1. Launch EC2 Instances & Set Hostnames
+
+- **Jenkins EC2 User-Data**
+    ```bash
+    #!/bin/bash
+    sudo su -
+    hostnamectl set-hostname Jenkins
+    reboot
+    ```
+- **Ansible EC2 User-Data**
+    ```bash
+    #!/bin/bash
+    sudo su -
+    hostnamectl set-hostname Ansible
+    reboot
+    ```
+- **Docker Host EC2 User-Data**
+    ```bash
+    #!/bin/bash
+    sudo su -
+    hostnamectl set-hostname Docker
+    reboot
+    ```
+
+---
+
+### 2. Install Required Packages
+
+#### Jenkins Server
+```bash
+sudo yum update -y
+sudo yum install git -y
+# Jenkins
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo yum install jenkins -y
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+# Docker
+sudo yum install docker -y
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker jenkins
+```
+
+#### Ansible Server
+```bash
+sudo yum update -y
+sudo yum install epel-release -y
+sudo yum install ansible -y
+```
+
+#### Docker Host
+```bash
+sudo yum update -y
+sudo yum install docker -y
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
+---
+
+### 3. Configuration
+
+#### 3.1 GitHub ↔ Jenkins Webhook
+
+- **On Jenkins Server:**
+    - Go to Account → Security → API Token → Generate. Save the token.
+- **In Jenkins:**
+    - Go to Configure → API Token and apply/save.
+- **On GitHub:**
+    - Go to Repo Settings → Webhooks → Add webhook
+        - **Payload URL:** `http://<jenkins-ip>:8080/github-webhook/`
+        - **Content type:** `application/json`
+        - **Secret:** Paste Jenkins token
+
+#### 3.2 Passwordless SSH Connections
+
+**Between Jenkins and Ansible:**
+```bash
+ssh-keygen   # (Press Enter 3 times)
+cat ~/.ssh/id_rsa.pub
+```
+Copy the content and paste into `~/.ssh/authorized_keys` on Ansible server.
+
+Edit `/etc/ssh/sshd_config` on Ansible:
+```
+PermitRootLogin yes
+PasswordAuthentication yes
+```
+Restart SSH:
+```bash
+systemctl restart sshd
+```
+
+**Between Ansible and Docker Host:**  
+Repeat the above steps from Ansible to Docker host.
+
+---
+
+## 4. Jenkins Setup
+
+### 4.1 Install Publish Over SSH Plugin
+- Jenkins Web UI → Manage Jenkins → Manage Plugins
+- Search for and install **Publish Over SSH**.
+
+### 4.2 Configure SSH Servers
+- Jenkins Web UI → Manage Jenkins → Configure System
+- Scroll to Publish over SSH section.
+- Click Add under SSH Servers.
+    - Name: e.g., ansible
+    - Hostname: Ansible server's IP/FQDN
+    - Username: ec2-user or root
+    - Remote Directory: e.g., /home/ec2-user
+    - Authentication: Use the appropriate private key, or password if needed.
+- Test Configuration to verify connection.
+- Save configuration.
+
+### 4.3 Create Jenkins Job/Project
+
+- Jenkins Dashboard → New Item → Name: e.g., `webserver-deploy` → Freestyle Project → OK.
+
+#### a. Source Code Management
+- Select Git.
+- Enter your GitHub repository URL.
+- Add credentials if your repo is private.
+
+#### b. Build Triggers
+- Check **GitHub hook trigger for GITScm polling**.
+
+#### c. Build Steps
+
+In the build steps, add commands such as:
+
+```bash
+cd /var/lib/jenkins/workspace/project2/
+docker build -t abrarathani/docker_devops_2025:cicd2img .
+docker login -u <userid> -p <passwd>
+docker push abrarathani/docker_devops_2025:cicd2img
+```
+
+#### d. Post-build Actions
+
+Send build artefacts over SSH and trigger Ansible playbook:
+
+- SSH server: Ansible
+- Name: Ansible
+- Exec command:
+    ```bash
+    ansible-playbook /opt/docker.yaml -i /opt/myinvent
+    ```
+
+---
+
+## 5. Ansible Server Setup: Inventory & Playbook
+
+### 5.1 Inventory File: `myinvent`
+```
+[dockerhosts]
+<docker-host-ip> ansible_user=ec2-user ansible_ssh_private_key_file=/path/to/key.pem
+```
+Update `<docker-host-ip>` and key path as needed.
+
+### 5.2 (Optional) Add Hosts to /etc/hosts
+
+If needed, map hostnames for easier access:
+```bash
+sudo vi /etc/hosts
+# Add:
+<web_host_ip> web
+```
+
+### 5.3 Playbook: `docker.yaml`
+```yaml
+- hosts: dockerhosts
+  tasks:
+    - name: Stop old container
+      shell: docker container stop testcon || true
+    - name: Remove old container
+      shell: docker container rm testcon || true
+    - name: Remove old docker image
+      shell: docker image rmi abrarathani/docker_devops_2025:cicd2img || true
+    - name: Run new container
+      shell: docker run -itd --name testcon -p 8080:80 abrarathani/docker_devops_2025:cicd2img
+```
+
+---
+
+## 6. Sample Files
+
+### Dockerfile
+```dockerfile
+FROM centos:latest
+MAINTAINER Your Name <your@email.com>
+RUN yum -y install httpd
+COPY index.html /var/www/html/
+CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
+EXPOSE 80
+```
+
+---
+
+## 7. Testing
+
+After a successful Jenkins build, access your web application at:
+```
+http://<webhost-public-ip>/
+```
+
+---
+
+## 8. Troubleshooting
+
+### Jenkins Storage, Temp, and Swap Issues
+
+**Example Error**
+- Free Swap Space: 0 B ⚠️
+- Free Temp Space: 447.93 MiB ⚠️
+- Node Status: (offline)
+
+**Why:** Jenkins marks the node offline if swap space is zero or temp space is too low.
+
+**Steps to Fix:**
+
+1. **Add Swap Space (Amazon Linux 2023)**
+    ```bash
+    sudo fallocate -l 1G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+    ```
+2. **Clean Temp Directory**
+    ```bash
+    sudo du -sh /tmp/*
+    sudo rm -rf /tmp/*
+    sudo systemctl restart jenkins
+    ```
+3. **Check /tmp Space**
+    ```bash
+    df -h /tmp
+    ```
+4. **Increase /tmp Size Temporarily (if tmpfs)**
+    ```bash
+    sudo mount -o remount,size=2G /tmp
+    ```
+5. **Use Disk for Jenkins Temp Directory**
+    ```bash
+    sudo mkdir -p /opt/jenkins_tmp
+    sudo chmod 777 /opt/jenkins_tmp
+    sudo systemctl restart jenkins
+    ```
+
+After fixing, recheck in Jenkins: Manage Jenkins → Nodes → Built-In Node.
+
+---
+
+### General Command Troubleshooting
+
+#### 1. Verifying Jenkins Build Steps Individually
+
+- Go to your Jenkins job → Configure → Build section → Execute shell.
+- Add and run each command individually:
+    - `git clone <your-repo-url>`
+    - `docker build ...`
+    - `docker tag ...`
+    - `docker push ...`
+
+Check the Jenkins "Console Output" for errors after each step.
+
+#### 2. Verify Image on Docker Hub
+
+- Login to [Docker Hub](https://hub.docker.com/).
+- Confirm the pushed image and tag is visible.
+
+#### 3. Test Ansible Playbook (Dry Run)
+
+```bash
+ansible-playbook /opt/docker.yaml -i /opt/myinvent -C
+```
+- This simulates execution without making changes.
+- Fix any syntax, connectivity, or permissions errors shown.
+
+#### 4. Manual Command Testing on Docker Host
+
+SSH into your Docker host and manually run:
+
+```bash
+docker container stop testcon
+docker container rm testcon
+docker image rmi abrarathani/docker_devops_2025:cicd2img
+docker run -itd --name testcon -p 8080:80 abrarathani/docker_devops_2025:cicd2img
+```
+
+---
+
+**Troubleshooting Tips**
+- Check Jenkins "Console Output" for logs.
+- Use `docker images` and `docker ps -a` to inspect images/containers.
+- Use `ansible -m ping -i myinvent dockerhosts` for connectivity.
+- Use `ansible-playbook -C` for dry-run playbook testing.
+- Confirm image upload on Docker Hub.
+
+---
+
+## License
+
+This project is for educational and demonstration purposes.  
+[MIT](LICENSE)
