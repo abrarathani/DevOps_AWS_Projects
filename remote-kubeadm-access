@@ -1,0 +1,118 @@
+# Access Remote Kubeadm Kubernetes Cluster from Local Ubuntu Machine
+
+This repository contains a step-by-step guide to access a remote Kubernetes cluster (installed using kubeadm) from your local Ubuntu machine.
+
+---
+
+## Overview
+
+When managing Kubernetes clusters remotely, you often need to configure your local environment (`kubectl`) to connect securely to a remote Kubernetes master node. This guide walks you through:
+
+- Transferring SSH private keys securely from Windows to Ubuntu (optional)
+- Connecting to the remote Kubernetes master
+- Copying and configuring the kubeconfig file
+- Installing and configuring `kubectl` locally
+- Verifying cluster access
+
+---
+
+## Prerequisites
+
+- SSH private key file (e.g., `MC 1 Key.pem`)
+- Access to the remote Kubernetes master node IP address
+- Local Ubuntu machine (or VM) where you want to run `kubectl`
+- `scp` and `ssh` installed on the local Ubuntu machine
+
+---
+
+## Step-by-Step Guide
+
+### 0. (Optional) Transfer SSH Private Key from Windows to Ubuntu
+
+> If your private key is on Windows, transfer it using **WinSCP**:
+
+1. Open WinSCP and connect to your local Ubuntu machine.  
+2. Upload your private key file (`MC 1 Key.pem`) to `/home/ubuntu/`.  
+3. Set secure permissions on the key on Ubuntu:
+
+   ```bash
+   chmod 600 /home/ubuntu/MC\ 1\ Key.pem
+
+1. SSH into Remote Kubernetes Master
+
+ssh -i "/home/ubuntu/MC 1 Key.pem" ubuntu@<remote_master_ip>
+
+> Replace <remote_master_ip> with the actual IP of your Kubernetes master node
+
+
+2. Prepare the Kubernetes Config File on Remote Master
+> Run these commands on the remote master:
+
+sudo cp /etc/kubernetes/admin.conf /tmp/admin.conf
+sudo chown ubuntu:ubuntu /tmp/admin.conf
+exit
+
+
+3. Create .kube Directory Locally
+> On your local Ubuntu machine:
+
+mkdir -p ~/.kube
+
+
+4. Copy Kubeconfig File from Remote Master to Local Machine
+
+scp -i "/home/ubuntu/MC 1 Key.pem" ubuntu@<remote_master_ip>:/tmp/admin.conf ~/.kube/admin.conf
+
+5. Set Proper Permissions on Kubeconfig File
+ls -l  ~/.kube/admin.conf
+chmod 600 ~/.kube/admin.conf
+
+
+6. Install kubectl on Local Ubuntu Machine
+> Option 1 (Snap, Recommended):
+sudo snap install kubectl --classic
+
+> Option 2 (Manual Download):
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+
+> Verify installation:
+kubectl version --client
+
+7. Configure Environment to Use the Kubeconfig
+
+export KUBECONFIG=~/.kube/admin.conf
+
+> Make persistent by adding to .bashrc:
+
+echo "export KUBECONFIG=~/.kube/admin.conf" >> ~/.bashrc
+source ~/.bashrc
+
+
+8. Verify Connection to Remote Kubernetes Cluster
+
+kubectl get nodes
+
+> Expected output: List of your Kubernetes cluster nodes.
+
+Summary
+> Copied SSH private key from Windows to Ubuntu (optional).
+> SSH’ed into remote Kubernetes master with the key.
+> Copied kubeconfig file (admin.conf) to local machine.
+> Installed and configured kubectl.
+> Verified successful remote cluster access.
+
+Troubleshooting
+> Permission denied (publickey): Check your private key permissions (chmod 600) and SSH username.
+> Connection refused errors: Verify IP address, network connectivity, and SSH access.
+> kubectl not found: Install kubectl using snap or download method.
+
+
+License
+> This guide is provided as-is for educational and operational use.
+
+
+
